@@ -1,0 +1,9 @@
+/node_modules
+node_modules
+build
+/build
+test.js
+.env
+env
+lambda-deployment-prod
+lambda-deployment-prod.zip
