@@ -5,6 +5,7 @@ const dictionaryCache = {};
 
 const dictionaryMapping = {
   soporte_prueba_saberProtyt: "DiccionarioTYT.txt",
+  cun_institutions: "DiccionarioCUN.txt"
 };
 
 async function getDictionaryForDocumentType(documentType) {

@@ -9,15 +9,13 @@ async function processDocuments(inputData, downloadedFiles, documentUrls) {
     NumeroDocumento: inputData.Numero_de_Documento || '',
     NivelDeFormacion: inputData.NivelDeFormacion || '',
     SaberProTyT: '',
-    valido_saberProTyt: 'N/A',
-    valido_identidad: 'N/A',
-    valido_nivelFormacion: 'N/A',
     EK :'',
     Num_Documento_Extraido:'',
     Fecha_Presentacion_Extraida:'',
     Programa_Extraido:'',
     Institucion_Extraida:'',
-    Institucion_Valida: ''
+    Institucion_Valida: '',
+    NivelFormacion_Valido:''
   };
 
   const documentMap = {};

@@ -2,7 +2,7 @@ function extractDocumentUrls(inputData) {
   const documentUrls = {};
   
   const documentFields = [
-    { field: 'Soporte_prueba_saber_ProTyt', key: 'soporte_prueba_saberProtyt' }
+    { field: 'Soporte_prueba_saber_ProTyt', key: 'soporte_prueba_saberProtyt' },
   ];
 
   for (const doc of documentFields) {
