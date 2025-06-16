@@ -58,12 +58,14 @@ async function createPackage() {
     dependencies: {
       archiver: "^6.0.1",
       "aws-sdk": "^2.1514.0",
-      "axios": "^1.6.0",
-      "dotenv": "^16.3.0",
+      axios: "^1.6.0",
+      dotenv: "^16.3.0",
       "fs-extra": "^11.2.0",
-      "glob": "^10.3.0",
-      "googleapis": "^128.0.0",
-      "readline": "^1.3.0",
+      glob: "^10.3.0",
+      googleapis: "^128.0.0",
+      readline: "^1.3.0",
+      sharp: "^0.33.0",
+      pdf2pic: "^2.1.4",
     },
   };
 

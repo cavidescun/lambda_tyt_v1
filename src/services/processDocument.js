@@ -1,6 +1,6 @@
 const { getDictionaryForDocumentType } = require("./dictionaryService");
 const { validateTextWithDictionary } = require("./validatorDocuments");
-const { extractTextWithDocumentType } = require("./textract");
+const { extractTextWithDocumentType } = require("./enhancedTextract");
 const { extractDataTyT } = require("./extractDataDocuments");
 
 async function processDocuments(inputData, downloadedFiles, documentUrls) {
@@ -16,6 +16,7 @@ async function processDocuments(inputData, downloadedFiles, documentUrls) {
     Institucion_Extraida: "",
     Institucion_Valida: "",
     NivelFormacion_Valido: "",
+    ConversionPDF_Aplicada: "", // Nuevo campo para tracking
   };
 
   const documentMap = {};
@@ -59,7 +60,24 @@ async function processDocumentType(
       )})`
     );
 
-    const extractedText = await extractTextWithDocumentType(file.path, docType);
+    // Usar el servicio mejorado que incluye conversión PDF a imagen
+    let extractedText;
+    let conversionApplied = false;
+    
+    try {
+      console.log(`[PROCESS] Iniciando extracción mejorada para ${docType}...`);
+      extractedText = await extractTextWithDocumentType(file.path, docType);
+      
+      // Verificar si se aplicó conversión (esto se puede mejorar con metadata)
+      if (file.fileName.toLowerCase().endsWith('.pdf')) {
+        console.log(`[PROCESS] Procesamiento PDF completado para ${docType}`);
+        conversionApplied = true;
+      }
+      
+    } catch (extractionError) {
+      console.error(`[PROCESS] Error en extracción mejorada: ${extractionError.message}`);
+      throw extractionError;
+    }
 
     const dictionary = await getDictionaryForDocumentType(docType);
     const isValid = await validateTextWithDictionary(extractedText, dictionary);
@@ -67,6 +85,14 @@ async function processDocumentType(
     console.log(
       `[PROCESS] Validación ${docType}: ${isValid ? "VÁLIDO" : "INVÁLIDO"}`
     );
+
+    // Registrar si se aplicó conversión PDF
+    if (conversionApplied) {
+      output.ConversionPDF_Aplicada = "Si";
+      console.log(`[PROCESS] Conversión PDF aplicada para mejor extracción`);
+    } else {
+      output.ConversionPDF_Aplicada = "No";
+    }
 
     if (isValid) {
       if (docType === "soporte_prueba_saberProtyt") {
@@ -78,6 +104,7 @@ async function processDocumentType(
         output.Programa_Extraido = dataTyT.programa;
         output.Institucion_Extraida = dataTyT.institucion;
 
+        // Validación de número de documento
         if (dataTyT.numDocumento === inputData.Numero_de_Documento) {
           output.Num_Doc_Valido = "Valido";
           console.log(`[PROCESS] Número de documento COINCIDE`);
@@ -88,16 +115,7 @@ async function processDocumentType(
           );
         }
 
-        if (dataTyT.numDocumento === inputData.Numero_de_Documento) {
-          output.Num_Doc_Valido = "Valido";
-          console.log(`[PROCESS] Número de documento COINCIDE`);
-        } else {
-          output.Num_Doc_Valido = "Revision Manual";
-          console.log(
-            `[PROCESS] Número de documento NO COINCIDE: ${dataTyT.numDocumento} vs ${inputData.Numero_de_Documento}`
-          );
-        }
-
+        // Validación de nivel de formación
         const palabrasTecnico = ["técnico", "tecnico", "técnica", "tecnica"];
         const palabrasTecnologo = [
           "tecnólogo",
@@ -149,6 +167,7 @@ async function processDocumentType(
           output.NivelFormacion_Valido = "";
         }
 
+        // Validación de institución CUN
         const dictionaryCUN = await getDictionaryForDocumentType(
           "cun_institutions"
         );
@@ -164,6 +183,13 @@ async function processDocumentType(
           output.Institucion_Valida = "Revision Manual";
           console.log(`[PROCESS] Institución CUN REQUIERE REVISIÓN`);
         }
+
+        // Log adicional para conversión PDF
+        if (conversionApplied) {
+          console.log(`[PROCESS] ✓ Extracción mejorada con conversión PDF completada`);
+          console.log(`[PROCESS] - Texto extraído: ${extractedText.length} caracteres`);
+          console.log(`[PROCESS] - Datos encontrados: EK=${dataTyT.registroEK !== 'Extracción Manual' ? 'Si' : 'No'}, Documento=${dataTyT.numDocumento !== 'Extracción Manual' ? 'Si' : 'No'}`);
+        }
       }
 
       output[outputField] = "Documento Valido";
@@ -175,7 +201,11 @@ async function processDocumentType(
   } catch (error) {
     console.error(`[PROCESS] Error procesando ${docType}:`, error.message);
 
-    if (error.message.includes("HTML_FILE_DETECTED")) {
+    // Manejo mejorado de errores específicos de conversión PDF
+    if (error.message.includes("Error convirtiendo PDF a imágenes")) {
+      output[outputField] = "Error conversión PDF - Revision Manual";
+      output.ConversionPDF_Aplicada = "Error";
+    } else if (error.message.includes("HTML_FILE_DETECTED")) {
       output[outputField] = "Archivo HTML detectado - Revision Manual";
     } else if (error.message.includes("NO_TEXT_EXTRACTED")) {
       output[outputField] = "Sin texto extraíble - Revision Manual";
